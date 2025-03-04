@@ -1,69 +1,203 @@
-# Welcome to your Lovable project
 
-## Project info
+# **Apply Archive - Job Application Tracker** 🎯
 
-**URL**: https://lovable.dev/projects/35f2c830-3996-4220-85ce-4d2ef6d5b1fa
+A **free & open-source job application tracker** to organize your job search efficiently!  
+Track applications, store resumes, search/filter jobs, and **never lose track of your applications again!**  
 
-## How can I edit this code?
+🚀 **Live Demo**: [Apply Archive](https://apply-archive-demo.netlify.app)  
+⭐ **Star the Repo**: [GitHub Repository](https://github.com/yourusername/apply-archive)
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## **✨ Features**
+✔️ **Track Job Applications** – Store company names, job descriptions, dates, and statuses  
+✔️ **Resume & Cover Letter Management** – Upload and organize documents  
+✔️ **Search & Filter** – Quickly find applications by company name or role  
+✔️ **Dual Storage Support** – Use **LocalStorage (no backend)** or **MongoDB (persistent storage)**  
+✔️ **Intuitive UI** – Clean, minimal UI built with React & Tailwind CSS  
+✔️ **Fully Responsive** – Works on desktops, tablets, and mobile devices  
+✔️ **Robust Error Handling** – Graceful fallbacks and informative user feedback  
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/35f2c830-3996-4220-85ce-4d2ef6d5b1fa) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## **📺 Screenshots**
+| Dashboard View | Add Application | Search & Filter |
+|---------------|----------------|----------------|
+| ![Dashboard](./assets/dashboard.png) | ![Add Job](./assets/add-job.png) | ![Search](./assets/search-filter.png) |
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## **💠 Storage Modes**
+This application works in two modes:
+1. **LocalStorage Mode** (Frontend-only, no setup required)
+2. **MongoDB Mode** (Persistent storage, requires backend setup)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+The app automatically detects the availability of MongoDB and falls back to LocalStorage if the database connection fails.
 
-Follow these steps:
+---
 
+## **🚀 Installation Guide**
+### **1️⃣ Prerequisites**
+Ensure you have the following installed:
+- **[Node.js](https://nodejs.org/)** (v14 or higher)
+- **npm** or **yarn**
+- **MongoDB** (optional, only for persistent storage)
+
+### **2️⃣ Clone the Repository**
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/yourusername/apply-archive.git
+cd apply-archive
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### **3️⃣ Configure Environment Variables**
+Create a `.env` file in the root directory and copy the content from `.env.example`:
+```sh
+# MongoDB Connection String 
+# For local MongoDB:
+MONGODB_URI=mongodb://localhost:27017/applyarchive
 
-# Step 3: Install the necessary dependencies.
-npm i
+# For MongoDB Atlas:
+# MONGODB_URI=mongodb+srv://yourusername:yourpassword@cluster.mongodb.net/applyarchive?retryWrites=true&w=majority
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Frontend environment variables
+# Set to "true" to enable MongoDB integration in the frontend
+# Set to any other value or remove to use localStorage only
+VITE_MONGODB_URI=true
+
+# The URL of your API server - must match the server's port (default is 5001)
+VITE_API_URL=http://localhost:5001/api
+
+# Server port
+PORT=5001
+```
+
+---
+
+## **🎯 Running the Application**
+### **🔥 Quick Start (Both Frontend & Backend)**
+Run everything with **one command**:
+```sh
+node start-app.js
+```
+💪 **Backend**: http://localhost:5001  
+💪 **Frontend**: http://localhost:8080  
+
+### **📌 LocalStorage Mode (Frontend Only)**
+If you don't want to set up a database, run:
+```sh
+npm run dev
+```
+💪 **Available at**: http://localhost:8080  
+
+### **📁 MongoDB Mode (Persistent Storage)**
+Start the backend:
+```sh
+node server.js
+```
+Then, start the frontend:
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## **🛠 API Endpoints (MongoDB Mode)**
+| Method | Endpoint | Description |
+|--------|---------|-------------|
+| **GET** | `/api/applications` | Get all job applications |
+| **GET** | `/api/applications/:id` | Get a specific application |
+| **POST** | `/api/applications` | Create a new application |
+| **PUT** | `/api/applications/:id` | Update an application |
+| **DELETE** | `/api/applications/:id` | Delete an application |
+| **GET** | `/api/health` | Check API and MongoDB connection |
+| **POST** | `/api/upload` | Upload resume or cover letter files |
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## **💽 Project Structure**
+```
+apply-archive/
+├── .env                  # Environment variables
+├── .env.example          # Example environment variables
+├── package.json          # Project dependencies
+├── server.js             # Express backend
+├── start-app.js          # Start script (Frontend + Backend)
+├── uploads/              # Storage for uploaded files
+├── src/                  # Frontend source
+│   ├── App.tsx           # Main component with routing
+│   ├── components/       # UI components
+│   │   ├── ApplicationCard.tsx  # Job application card
+│   │   ├── FileUpload.tsx       # File upload component
+│   │   ├── SearchBar.tsx        # Search and filter
+│   │   ├── StatCard.tsx         # Statistics card
+│   │   ├── StatusBadge.tsx      # Application status badges
+│   │   └── ui/                  # UI components from shadcn
+│   ├── lib/              # Utilities
+│   │   ├── storage.ts    # Storage logic (localStorage & MongoDB)
+│   │   └── utils.ts      # Utility functions
+│   ├── pages/            # App pages
+│   │   ├── AddApplication.tsx   # Add new application
+│   │   ├── EditApplication.tsx  # Edit existing application
+│   │   ├── Index.tsx            # Main dashboard
+│   │   ├── NotFound.tsx         # 404 page
+│   │   └── ViewApplication.tsx  # View application details
+│   ├── types/            # TypeScript types
+│   │   └── types.ts             # Type definitions
+│   ├── main.tsx          # Application entry point
+│   └── vite.config.ts    # Vite configuration
+└── README.md             # This file!
+```
 
-## What technologies are used for this project?
+---
 
-This project is built with .
+## **🌍 Contributing**
+Want to contribute? Follow these steps:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. **Fork the repository** 🍞
+2. Clone your fork:
+   ```sh
+   git clone https://github.com/yourusername/apply-archive.git
+   ```
+3. Create a new branch:
+   ```sh
+   git checkout -b feature/your-feature
+   ```
+4. Commit changes:
+   ```sh
+   git add .
+   git commit -m "Added a new feature"
+   ```
+5. Push & create a **Pull Request**! 🚀
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/35f2c830-3996-4220-85ce-4d2ef6d5b1fa) and click on Share -> Publish.
+## **⚠️ Troubleshooting**
 
-## I want to use a custom domain - is that possible?
+### MongoDB Connection Issues
+- Ensure MongoDB is running (run `mongod` in terminal)
+- Check your connection string in `.env`
+- Verify network connectivity to MongoDB Atlas (if using cloud)
+- The app will automatically fall back to localStorage if MongoDB is unavailable
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+### File Upload Problems
+- Check that the `uploads` directory exists and has write permissions
+- Maximum file size is limited to 50MB
+- Supported file types: PDF, DOC, DOCX, TXT
+
+### Cross-Platform Notes
+- **Windows**: Use `npm run dev-win` for Windows-specific environment
+- **macOS/Linux**: Standard commands work without modification
+- If you encounter EACCES errors on Linux/Mac, use `sudo chmod -R 755 uploads/`
+
+---
+
+## **📝 License**
+This project is licensed under the **MIT License** – free to use, modify, and share!  
+Check the [LICENSE](./LICENSE) file for details.
+
+---
+
+## **⭐ Support & Share**
+- **If you like this project, give it a ⭐ on GitHub!**  
+- **Share with job seekers & friends** to help them manage their applications!  
+- **Follow for updates! 🚀**  
