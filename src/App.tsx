@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import Index from "./pages/Index";
 import AddApplication from "./pages/AddApplication";
 import ViewApplication from "./pages/ViewApplication";
+import EditApplication from "./pages/EditApplication";
 import NotFound from "./pages/NotFound";
 import { getMongoDBConfig } from "./lib/storage";
 import { toast } from "sonner";
@@ -53,6 +54,7 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/add-application" element={<AddApplication />} />
             <Route path="/application/:id" element={<ViewApplication />} />
+            <Route path="/edit-application/:id" element={<EditApplication />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
