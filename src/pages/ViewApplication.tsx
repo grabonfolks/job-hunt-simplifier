@@ -1,0 +1,347 @@
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import StatusBadge from '@/components/StatusBadge';
+import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Job, ApplicationStatus } from '@/types/types';
+import { getJobById, updateJob, deleteJob } from '@/lib/storage';
+import { 
+  ArrowLeft, Building, Briefcase, MapPin, Link as LinkIcon, 
+  Calendar, DollarSign, User, Mail, FileText, Trash2, 
+  ExternalLink, Download, PenSquare
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+const ViewApplication = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [job, setJob] = useState<Job | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Load job data
+  useEffect(() => {
+    if (!id) return;
+    
+    const jobData = getJobById(id);
+    if (jobData) {
+      setJob(jobData);
+    } else {
+      toast.error('Application not found');
+      navigate('/');
+    }
+  }, [id, navigate]);
+  
+  // Handle status change
+  const handleStatusChange = (status: string) => {
+    if (!job) return;
+    
+    const updatedJob: Job = {
+      ...job,
+      status: status as ApplicationStatus
+    };
+    
+    updateJob(updatedJob);
+    setJob(updatedJob);
+  };
+  
+  // Handle job deletion
+  const handleDelete = () => {
+    if (!job || !job.id) return;
+    
+    setIsDeleting(true);
+    try {
+      deleteJob(job.id);
+      toast.success('Application deleted successfully');
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      toast.error('Failed to delete application');
+      setIsDeleting(false);
+    }
+  };
+  
+  // Format date
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'MMMM d, yyyy');
+    } catch (error) {
+      return dateString;
+    }
+  };
+  
+  // Handle resume download
+  const handleDownloadResume = () => {
+    if (!job?.resumePath) return;
+    
+    const link = document.createElement('a');
+    link.href = job.resumePath;
+    link.download = `${job.companyName}_Resume.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  // Handle cover letter download
+  const handleDownloadCoverLetter = () => {
+    if (!job?.coverLetterPath) return;
+    
+    const link = document.createElement('a');
+    link.href = job.coverLetterPath;
+    link.download = `${job.companyName}_CoverLetter.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  if (!job) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading application details...</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+          <Button 
+            variant="ghost" 
+            className="mb-4 sm:mb-0 flex items-center gap-2"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          
+          <div className="flex items-center gap-3">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your application
+                    data from your local storage.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <Link to={`/edit-application/${job.id}`}>
+              <Button className="flex items-center gap-2">
+                <PenSquare className="h-4 w-4" />
+                Edit
+              </Button>
+            </Link>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="p-6 animate-fade-in">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                <div>
+                  <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                    <Building className="h-4 w-4" />
+                    <span className="text-sm font-medium">{job.companyName}</span>
+                  </div>
+                  <h1 className="text-2xl font-bold">{job.position}</h1>
+                </div>
+                
+                <StatusBadge status={job.status} className="mt-3 sm:mt-0" />
+              </div>
+              
+              <Separator className="my-4" />
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                {job.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{job.location}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span>Applied on {formatDate(job.applicationDate)}</span>
+                </div>
+                
+                {job.salary && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span>{job.salary}</span>
+                  </div>
+                )}
+                
+                {job.url && (
+                  <div className="flex items-center gap-2">
+                    <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                    <a 
+                      href={job.url.startsWith('http') ? job.url : `https://${job.url}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary underline underline-offset-2 flex items-center"
+                    >
+                      View Job Posting
+                      <ExternalLink className="h-3 w-3 ml-1" />
+                    </a>
+                  </div>
+                )}
+              </div>
+              
+              {job.contactName || job.contactEmail ? (
+                <>
+                  <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    {job.contactName && (
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>{job.contactName}</span>
+                      </div>
+                    )}
+                    
+                    {job.contactEmail && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <a 
+                          href={`mailto:${job.contactEmail}`}
+                          className="text-primary underline underline-offset-2"
+                        >
+                          {job.contactEmail}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                  <Separator className="my-4" />
+                </>
+              ) : null}
+              
+              {job.jobDescription && (
+                <>
+                  <h3 className="text-lg font-semibold mb-3">Job Description</h3>
+                  <div className="bg-muted/30 p-4 rounded-md max-h-96 overflow-y-auto">
+                    <pre className="text-sm whitespace-pre-wrap">{job.jobDescription}</pre>
+                  </div>
+                </>
+              )}
+            </Card>
+            
+            {job.notes && (
+              <Card className="p-6 animate-fade-in animation-delay-100">
+                <h3 className="text-lg font-semibold mb-3">Notes</h3>
+                <div className="bg-muted/30 p-4 rounded-md">
+                  <p className="whitespace-pre-wrap">{job.notes}</p>
+                </div>
+              </Card>
+            )}
+          </div>
+          
+          <div className="space-y-6">
+            <Card className="p-6 animate-fade-in animation-delay-200">
+              <h3 className="text-lg font-semibold mb-4">Application Status</h3>
+              
+              <Select
+                value={job.status}
+                onValueChange={handleStatusChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="saved">Saved</SelectItem>
+                  <SelectItem value="applied">Applied</SelectItem>
+                  <SelectItem value="interviewing">Interviewing</SelectItem>
+                  <SelectItem value="offered">Offered</SelectItem>
+                  <SelectItem value="accepted">Accepted</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <p className="text-xs text-muted-foreground mt-2">
+                Last updated: {formatDate(job.lastUpdated)}
+              </p>
+            </Card>
+            
+            <Card className="p-6 animate-fade-in animation-delay-300">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documents
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium mb-2">Resume / CV</p>
+                  {job.resumePath ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={handleDownloadResume}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Resume
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No resume uploaded</p>
+                  )}
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium mb-2">Cover Letter</p>
+                  {job.coverLetterPath ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={handleDownloadCoverLetter}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Cover Letter
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No cover letter uploaded</p>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ViewApplication;
