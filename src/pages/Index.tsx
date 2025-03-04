@@ -10,7 +10,11 @@ import { getJobs, getFilter, saveFilter, applyFilters, getMongoDBConfig } from '
 import { PlusCircle, Database, HardDrive, Search, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-const Index = () => {
+interface IndexProps {
+  storageMode?: string;
+}
+
+const Index: React.FC<IndexProps> = ({ storageMode = 'Loading...' }) => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [filter, setFilter] = useState<Filter>(getFilter());

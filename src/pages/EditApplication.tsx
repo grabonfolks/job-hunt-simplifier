@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Job, ApplicationStatus } from '@/types/types';
-import { getJobById, updateJob, getMongoDBConfig } from '@/lib/storage';
+import { getJob, updateJob, getMongoDBConfig } from '@/lib/storage';
 import { ArrowLeft, Save, Database, HardDrive } from 'lucide-react';
 import FileUpload from '@/components/FileUpload';
 import { toast } from 'sonner';
@@ -52,7 +52,7 @@ const EditApplication = () => {
     const loadJob = async () => {
       setLoadingJob(true);
       try {
-        const jobData = await getJobById(id);
+        const jobData = await getJob(id);
         if (jobData) {
           setFormData({
             companyName: jobData.companyName || '',

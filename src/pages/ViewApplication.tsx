@@ -7,7 +7,7 @@ import StatusBadge from '@/components/StatusBadge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Job, ApplicationStatus } from '@/types/types';
-import { getJobById, updateJob, deleteJob, getMongoDBConfig } from '@/lib/storage';
+import { getJob, updateJob, deleteJob, getMongoDBConfig } from '@/lib/storage';
 import { 
   ArrowLeft, Building, Briefcase, MapPin, Link as LinkIcon, 
   Calendar, DollarSign, User, Mail, FileText, Trash2, 
@@ -43,7 +43,7 @@ const ViewApplication = () => {
     const loadJob = async () => {
       setIsLoading(true);
       try {
-        const jobData = await getJobById(id);
+        const jobData = await getJob(id);
         if (jobData) {
           setJob(jobData);
           setError(null);

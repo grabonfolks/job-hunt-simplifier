@@ -1,8 +1,72 @@
-import { Job, MongoDBConfig } from "@/types/types";
+
+import { Job, MongoDBConfig, Filter } from "@/types/types";
 
 // Function to generate a unique ID
 const generateId = (): string => {
   return Math.random().toString(36).substring(2, 15);
+};
+
+// Functions for filter management
+export const getFilter = (): Filter => {
+  const filterString = localStorage.getItem('filter');
+  return filterString ? JSON.parse(filterString) : {
+    search: '',
+    status: 'all',
+    sortBy: 'date',
+    sortOrder: 'desc'
+  };
+};
+
+export const saveFilter = (filter: Filter): void => {
+  localStorage.setItem('filter', JSON.stringify(filter));
+};
+
+export const applyFilters = (jobs: Job[], filter: Filter): Job[] => {
+  let filteredJobs = [...jobs];
+  
+  // Apply search filter
+  if (filter.search) {
+    const searchTerm = filter.search.toLowerCase();
+    filteredJobs = filteredJobs.filter(job => 
+      (job.companyName?.toLowerCase().includes(searchTerm) || 
+       job.position?.toLowerCase().includes(searchTerm) ||
+       job.location?.toLowerCase().includes(searchTerm))
+    );
+  }
+  
+  // Apply status filter
+  if (filter.status !== 'all') {
+    filteredJobs = filteredJobs.filter(job => job.status === filter.status);
+  }
+  
+  // Apply sorting
+  filteredJobs.sort((a, b) => {
+    if (filter.sortBy === 'date') {
+      const dateA = a.applicationDate || a.lastUpdated;
+      const dateB = b.applicationDate || b.lastUpdated;
+      return filter.sortOrder === 'asc' 
+        ? new Date(dateA).getTime() - new Date(dateB).getTime()
+        : new Date(dateB).getTime() - new Date(dateA).getTime();
+    }
+    
+    if (filter.sortBy === 'company') {
+      const companyA = a.companyName || '';
+      const companyB = b.companyName || '';
+      return filter.sortOrder === 'asc'
+        ? companyA.localeCompare(companyB)
+        : companyB.localeCompare(companyA);
+    }
+    
+    if (filter.sortBy === 'status') {
+      return filter.sortOrder === 'asc'
+        ? a.status.localeCompare(b.status)
+        : b.status.localeCompare(a.status);
+    }
+    
+    return 0;
+  });
+  
+  return filteredJobs;
 };
 
 // Function to get MongoDB configuration from environment variables
@@ -53,6 +117,28 @@ const deleteJobFromLocalStorage = (id: string): void => {
 // Add function to update MongoDB status for fallback handling
 export const setMongoDBStatus = (status: boolean): void => {
   localStorage.setItem('mongodb_connected', status ? 'true' : 'false');
+};
+
+// Files storage utility
+export const storeFile = async (file: File): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      if (e.target && typeof e.target.result === 'string') {
+        resolve(e.target.result);
+      } else {
+        resolve('');
+      }
+    };
+    
+    reader.readAsDataURL(file);
+  });
+};
+
+// Get job by ID (combining local and MongoDB)
+export const getJobById = async (id: string): Promise<Job | null> => {
+  return getJob(id);
 };
 
 // Update getJobs to better handle MongoDB connection issues
@@ -131,8 +217,15 @@ export const getJob = async (id: string): Promise<Job | null> => {
   }
 };
 
-// Update addJob to better handle MongoDB connection issues
-export const addJob = async (job: Job): Promise<void> => {
+// Update addJob to better handle MongoDB connection issues and add ID/lastUpdated
+export const addJob = async (jobData: Omit<Job, "id" | "lastUpdated">): Promise<void> => {
+  // Create a complete job with id and lastUpdated fields
+  const job: Job = {
+    ...jobData,
+    id: generateId(),
+    lastUpdated: new Date().toISOString()
+  };
+
   const mongoConfig = getMongoDBConfig();
   
   if (mongoConfig.enabled) {
@@ -171,20 +264,26 @@ export const addJob = async (job: Job): Promise<void> => {
 };
 
 // Update updateJob to better handle MongoDB connection issues
-export const updateJob = async (id: string, job: Job): Promise<void> => {
+export const updateJob = async (job: Job): Promise<void> => {
   const mongoConfig = getMongoDBConfig();
+  
+  // Update the lastUpdated timestamp
+  const updatedJob = {
+    ...job,
+    lastUpdated: new Date().toISOString()
+  };
   
   if (mongoConfig.enabled) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
-      const response = await fetch(`${mongoConfig.apiUrl}/applications/${id}`, {
+      const response = await fetch(`${mongoConfig.apiUrl}/applications/${job.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(job),
+        body: JSON.stringify(updatedJob),
         signal: controller.signal
       }).catch(error => {
         if (error.name === 'AbortError') {
@@ -202,10 +301,10 @@ export const updateJob = async (id: string, job: Job): Promise<void> => {
       console.error('Error updating job in MongoDB:', error);
       // Fallback to localStorage
       setMongoDBStatus(false);
-      updateJobInLocalStorage(id, job);
+      updateJobInLocalStorage(job.id, updatedJob);
     }
   } else {
-    updateJobInLocalStorage(id, job);
+    updateJobInLocalStorage(job.id, updatedJob);
   }
 };
 

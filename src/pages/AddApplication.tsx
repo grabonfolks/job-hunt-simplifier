@@ -68,7 +68,7 @@ const AddApplication = () => {
       }
       
       // Create job object
-      const newJob: Omit<Job, 'id' | 'lastUpdated'> = {
+      const newJob = {
         ...formData,
         resumePath,
         coverLetterPath
@@ -76,6 +76,8 @@ const AddApplication = () => {
       
       // Add job to storage
       await addJob(newJob);
+      
+      toast.success('Application added successfully');
       
       // Navigate back to dashboard
       navigate('/');
