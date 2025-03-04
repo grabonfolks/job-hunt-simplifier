@@ -1,11 +1,18 @@
 
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-require('dotenv').config();
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// Get current directory name (ESM equivalent of __dirname)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -55,10 +62,13 @@ const jobSchema = new mongoose.Schema({
 
 const Job = mongoose.model('Job', jobSchema);
 
-// Connect to MongoDB
+// Connect to MongoDB with error handling
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => console.log('Connected to MongoDB successfully'))
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    console.log('Continuing with local storage only');
+  });
 
 // File upload endpoint
 app.post('/api/upload', upload.single('file'), (req, res) => {
@@ -154,16 +164,35 @@ app.delete('/api/applications/:id', async (req, res) => {
   }
 });
 
-// Health check endpoint
+// Health check endpoint with improved error handling
 app.get('/api/health', (req, res) => {
-  if (mongoose.connection.readyState === 1) {
-    res.json({ status: 'ok', message: 'API server is running and connected to MongoDB' });
-  } else {
-    res.status(500).json({ status: 'error', message: 'Not connected to MongoDB' });
+  try {
+    if (mongoose.connection.readyState === 1) {
+      res.json({ status: 'ok', message: 'API server is running and connected to MongoDB' });
+    } else {
+      res.status(200).json({ 
+        status: 'limited', 
+        message: 'API server is running but not connected to MongoDB. Using local storage mode.' 
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'API server error', 
+      error: error.message 
+    });
   }
 });
 
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`API URL: http://localhost:${PORT}/api`);
+  console.log('Health check: http://localhost:' + PORT + '/api/health');
+});
+
+// Add proper error handling for unhandled rejections
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled Promise Rejection:', error);
+  // Don't crash the server, just log the error
 });

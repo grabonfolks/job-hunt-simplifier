@@ -33,3 +33,8 @@ export interface MongoDBConfig {
   enabled: boolean;
   apiUrl?: string;
 }
+
+// Add a package.json type
+export interface PackageJson {
+  "type": "module";
+}
