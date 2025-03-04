@@ -7,11 +7,11 @@ import StatusBadge from '@/components/StatusBadge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Job, ApplicationStatus } from '@/types/types';
-import { getJobById, updateJob, deleteJob } from '@/lib/storage';
+import { getJobById, updateJob, deleteJob, getMongoDBConfig } from '@/lib/storage';
 import { 
   ArrowLeft, Building, Briefcase, MapPin, Link as LinkIcon, 
   Calendar, DollarSign, User, Mail, FileText, Trash2, 
-  ExternalLink, Download, PenSquare
+  ExternalLink, Download, PenSquare, Database, HardDrive, AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -32,40 +32,63 @@ const ViewApplication = () => {
   const navigate = useNavigate();
   const [job, setJob] = useState<Job | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const mongoConfig = getMongoDBConfig();
   
   // Load job data
   useEffect(() => {
     if (!id) return;
     
-    const jobData = getJobById(id);
-    if (jobData) {
-      setJob(jobData);
-    } else {
-      toast.error('Application not found');
-      navigate('/');
-    }
+    const loadJob = async () => {
+      setIsLoading(true);
+      try {
+        const jobData = await getJobById(id);
+        if (jobData) {
+          setJob(jobData);
+          setError(null);
+        } else {
+          setError('Application not found');
+          toast.error('Application not found');
+          setTimeout(() => navigate('/'), 2000);
+        }
+      } catch (error) {
+        console.error('Error loading job:', error);
+        setError('Failed to load application details');
+        toast.error('Failed to load application details');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadJob();
   }, [id, navigate]);
   
   // Handle status change
-  const handleStatusChange = (status: string) => {
+  const handleStatusChange = async (status: string) => {
     if (!job) return;
     
-    const updatedJob: Job = {
-      ...job,
-      status: status as ApplicationStatus
-    };
-    
-    updateJob(updatedJob);
-    setJob(updatedJob);
+    try {
+      const updatedJob: Job = {
+        ...job,
+        status: status as ApplicationStatus
+      };
+      
+      await updateJob(updatedJob);
+      setJob(updatedJob);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update application status');
+    }
   };
   
   // Handle job deletion
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!job || !job.id) return;
     
     setIsDeleting(true);
     try {
-      deleteJob(job.id);
+      await deleteJob(job.id);
       toast.success('Application deleted successfully');
       navigate('/');
     } catch (error) {
@@ -76,7 +99,9 @@ const ViewApplication = () => {
   };
   
   // Format date
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    
     try {
       return format(new Date(dateString), 'MMMM d, yyyy');
     } catch (error) {
@@ -84,36 +109,56 @@ const ViewApplication = () => {
     }
   };
   
-  // Handle resume download
-  const handleDownloadResume = () => {
-    if (!job?.resumePath) return;
+  // Handle file download
+  const handleFileDownload = (fileUrl?: string, filename?: string) => {
+    if (!fileUrl) return;
     
-    const link = document.createElement('a');
-    link.href = job.resumePath;
-    link.download = `${job.companyName}_Resume.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error('Failed to download file');
+    }
   };
   
-  // Handle cover letter download
-  const handleDownloadCoverLetter = () => {
-    if (!job?.coverLetterPath) return;
-    
-    const link = document.createElement('a');
-    link.href = job.coverLetterPath;
-    link.download = `${job.companyName}_CoverLetter.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-  
-  if (!job) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading application details...</p>
+        <div className="flex flex-col items-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p>Loading application details...</p>
+        </div>
       </div>
     );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <Card className="p-8 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="rounded-full bg-destructive/10 p-4">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+              </div>
+              <h3 className="text-xl font-semibold">{error}</h3>
+              <Button onClick={() => navigate('/')}>
+                Return to Dashboard
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!job) {
+    return null;
   }
   
   return (
@@ -129,7 +174,19 @@ const ViewApplication = () => {
             Back to Dashboard
           </Button>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {mongoConfig.enabled ? (
+              <div className="flex items-center text-sm text-muted-foreground mr-4">
+                <Database className="h-4 w-4 mr-1 text-primary" />
+                MongoDB
+              </div>
+            ) : (
+              <div className="flex items-center text-sm text-muted-foreground mr-4">
+                <HardDrive className="h-4 w-4 mr-1" />
+                Local Storage
+              </div>
+            )}
+            
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button 
@@ -144,8 +201,7 @@ const ViewApplication = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your application
-                    data from your local storage.
+                    This action cannot be undone. This will permanently delete your application data.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -177,9 +233,9 @@ const ViewApplication = () => {
                 <div>
                   <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
                     <Building className="h-4 w-4" />
-                    <span className="text-sm font-medium">{job.companyName}</span>
+                    <span className="text-sm font-medium">{job.companyName || 'Company not specified'}</span>
                   </div>
-                  <h1 className="text-2xl font-bold">{job.position}</h1>
+                  <h1 className="text-2xl font-bold">{job.position || 'Position not specified'}</h1>
                 </div>
                 
                 <StatusBadge status={job.status} className="mt-3 sm:mt-0" />
@@ -195,10 +251,12 @@ const ViewApplication = () => {
                   </div>
                 )}
                 
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>Applied on {formatDate(job.applicationDate)}</span>
-                </div>
+                {job.applicationDate && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span>Applied on {formatDate(job.applicationDate)}</span>
+                  </div>
+                )}
                 
                 {job.salary && (
                   <div className="flex items-center gap-2">
@@ -223,7 +281,7 @@ const ViewApplication = () => {
                 )}
               </div>
               
-              {job.contactName || job.contactEmail ? (
+              {(job.contactName || job.contactEmail) && (
                 <>
                   <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -248,7 +306,7 @@ const ViewApplication = () => {
                   </div>
                   <Separator className="my-4" />
                 </>
-              ) : null}
+              )}
               
               {job.jobDescription && (
                 <>
@@ -284,11 +342,6 @@ const ViewApplication = () => {
                 <SelectContent>
                   <SelectItem value="saved">Saved</SelectItem>
                   <SelectItem value="applied">Applied</SelectItem>
-                  <SelectItem value="interviewing">Interviewing</SelectItem>
-                  <SelectItem value="offered">Offered</SelectItem>
-                  <SelectItem value="accepted">Accepted</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                  <SelectItem value="withdrawn">Withdrawn</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -310,7 +363,7 @@ const ViewApplication = () => {
                     <Button 
                       variant="outline" 
                       className="w-full justify-start"
-                      onClick={handleDownloadResume}
+                      onClick={() => handleFileDownload(job.resumePath, `${job.companyName || 'Company'}_Resume.pdf`)}
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Download Resume
@@ -326,7 +379,7 @@ const ViewApplication = () => {
                     <Button 
                       variant="outline" 
                       className="w-full justify-start"
-                      onClick={handleDownloadCoverLetter}
+                      onClick={() => handleFileDownload(job.coverLetterPath, `${job.companyName || 'Company'}_CoverLetter.pdf`)}
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Download Cover Letter

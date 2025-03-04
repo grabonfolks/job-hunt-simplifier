@@ -8,14 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import FileUpload from '@/components/FileUpload';
-import { addJob, storeFile } from '@/lib/storage';
+import { addJob, storeFile, getMongoDBConfig } from '@/lib/storage';
 import { ApplicationStatus, Job } from '@/types/types';
-import { ArrowLeft, Briefcase, Building, Calendar, FileText, MapPin } from 'lucide-react';
+import { ArrowLeft, Briefcase, Building, Calendar, FileText, MapPin, Database, HardDrive } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AddApplication = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const mongoConfig = getMongoDBConfig();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -24,7 +25,7 @@ const AddApplication = () => {
     location: '',
     jobDescription: '',
     applicationDate: new Date().toISOString().split('T')[0],
-    status: 'saved' as ApplicationStatus,
+    status: 'applied' as ApplicationStatus,
     salary: '',
     url: '',
     contactName: '',
@@ -51,11 +52,6 @@ const AddApplication = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.companyName || !formData.position) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-    
     setIsSubmitting(true);
     
     try {
@@ -75,12 +71,11 @@ const AddApplication = () => {
       const newJob: Omit<Job, 'id' | 'lastUpdated'> = {
         ...formData,
         resumePath,
-        coverLetterPath,
-        interviews: []
+        coverLetterPath
       };
       
       // Add job to storage
-      addJob(newJob);
+      await addJob(newJob);
       
       // Navigate back to dashboard
       navigate('/');
@@ -109,10 +104,26 @@ const AddApplication = () => {
           Back to Dashboard
         </Button>
         
-        <h1 className="text-3xl font-bold mb-8 flex items-center gap-2">
-          <Briefcase className="h-6 w-6" />
-          Add New Application
-        </h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Briefcase className="h-6 w-6" />
+            Add New Application
+          </h1>
+          
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {mongoConfig.enabled ? (
+              <div className="flex items-center">
+                <Database className="h-4 w-4 mr-1 text-primary" />
+                MongoDB
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <HardDrive className="h-4 w-4 mr-1" />
+                Local Storage
+              </div>
+            )}
+          </div>
+        </div>
         
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -123,7 +134,7 @@ const AddApplication = () => {
                 <div className="space-y-2">
                   <Label htmlFor="companyName" className="flex items-center gap-1">
                     <Building className="h-3.5 w-3.5" />
-                    Company Name <span className="text-destructive">*</span>
+                    Company Name
                   </Label>
                   <Input
                     id="companyName"
@@ -131,7 +142,6 @@ const AddApplication = () => {
                     placeholder="Google, Amazon, etc."
                     value={formData.companyName}
                     onChange={handleInputChange}
-                    required
                   />
                 </div>
                 
@@ -155,7 +165,7 @@ const AddApplication = () => {
                 <div className="space-y-2">
                   <Label htmlFor="position" className="flex items-center gap-1">
                     <Briefcase className="h-3.5 w-3.5" />
-                    Position <span className="text-destructive">*</span>
+                    Position
                   </Label>
                   <Input
                     id="position"
@@ -163,7 +173,6 @@ const AddApplication = () => {
                     placeholder="Software Engineer, Product Manager, etc."
                     value={formData.position}
                     onChange={handleInputChange}
-                    required
                   />
                 </div>
                 
@@ -236,11 +245,6 @@ const AddApplication = () => {
                     <SelectContent>
                       <SelectItem value="saved">Saved</SelectItem>
                       <SelectItem value="applied">Applied</SelectItem>
-                      <SelectItem value="interviewing">Interviewing</SelectItem>
-                      <SelectItem value="offered">Offered</SelectItem>
-                      <SelectItem value="accepted">Accepted</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="withdrawn">Withdrawn</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
