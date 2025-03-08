@@ -31,7 +31,8 @@ console.log('\x1b[36m%s\x1b[0m', '🚀 Starting Apply Archive...');
 console.log('\x1b[36m%s\x1b[0m', '📡 Starting backend server...');
 const backend = spawn('node', ['--experimental-modules', 'server.js'], {
   stdio: 'inherit',
-  env: process.env
+  env: process.env,
+  shell: true  // Add shell: true for Windows compatibility
 });
 
 // Wait a bit for the backend to initialize before starting frontend
@@ -40,7 +41,8 @@ setTimeout(() => {
   console.log('\x1b[36m%s\x1b[0m', '🖥️  Starting frontend server...');
   const frontend = spawn('npm', ['run', 'dev'], {
     stdio: 'inherit',
-    env: process.env
+    env: process.env,
+    shell: true  // Add shell: true for Windows compatibility
   });
 
   // Log URLs

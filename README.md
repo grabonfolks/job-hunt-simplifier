@@ -185,9 +185,15 @@ Want to contribute? Follow these steps:
 - Supported file types: PDF, DOC, DOCX, TXT
 
 ### Cross-Platform Notes
-- **Windows**: Use `npm run dev-win` for Windows-specific environment
+- **Windows**: Ensure you have npm in your system PATH
 - **macOS/Linux**: Standard commands work without modification
 - If you encounter EACCES errors on Linux/Mac, use `sudo chmod -R 755 uploads/`
+- For best results on Windows, run commands in a terminal with administrator privileges
+
+### Common Errors
+- **spawn npm ENOENT**: Make sure npm is installed and in your system PATH
+- **PORT already in use**: Change the PORT in your .env file
+- **MongoDB connection errors**: Verify that MongoDB is running and the connection string is correct
 
 ---
 
