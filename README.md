@@ -82,6 +82,44 @@ VITE_API_URL=http://localhost:5001/api
 PORT=5001
 ```
 
+### **5️⃣ MongoDB Setup**
+For persistent storage, you'll need MongoDB:
+
+#### **Local MongoDB Installation:**
+- **Windows:**
+  1. Download MongoDB Community Server from [MongoDB's official site](https://www.mongodb.com/try/download/community)
+  2. Run the installer and follow the installation wizard
+  3. Choose "Complete" installation and install MongoDB Compass (GUI) when prompted
+  4. MongoDB service will start automatically, verify it's running in Services
+  5. Create a `data\db` directory with `mkdir -p /data/db` (in admin PowerShell)
+
+- **macOS:**
+  1. Using Homebrew: `brew tap mongodb/brew && brew install mongodb-community`
+  2. Start the service: `brew services start mongodb-community`
+
+- **Linux (Ubuntu):**
+  1. Import MongoDB public key: `wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -`
+  2. Create list file: `echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list`
+  3. Update and install: `sudo apt-get update && sudo apt-get install -y mongodb-org`
+  4. Start MongoDB: `sudo systemctl start mongod`
+
+#### **MongoDB Atlas (Cloud):**
+1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register)
+2. Create a new project and cluster (free tier available)
+3. Set up database access (username and password)
+4. Set up network access (IP whitelist)
+5. Get your connection string from the "Connect" button
+6. Replace the MONGODB_URI in your .env file with the Atlas connection string
+
+#### **Verify MongoDB Connection:**
+After starting MongoDB, verify it's running:
+```sh
+# For local MongoDB
+mongosh
+
+# Should show a connection to mongodb://127.0.0.1:27017
+```
+
 ---
 
 ## **🎯 Running the Application**
@@ -161,27 +199,6 @@ apply-archive/
 
 ---
 
-## **🌍 Contributing**
-Want to contribute? Follow these steps:
-
-1. **Fork the repository** 🍞
-2. Clone your fork:
-   ```sh
-   git clone https://github.com/yourusername/apply-archive.git
-   ```
-3. Create a new branch:
-   ```sh
-   git checkout -b feature/your-feature
-   ```
-4. Commit changes:
-   ```sh
-   git add .
-   git commit -m "Added a new feature"
-   ```
-5. Push & create a **Pull Request**! 🚀
-
----
-
 ## **⚠️ Troubleshooting**
 
 ### MongoDB Connection Issues
@@ -208,6 +225,27 @@ Want to contribute? Follow these steps:
 
 ---
 
+## **🌍 Contributing**
+Want to contribute? Follow these steps:
+
+1. **Fork the repository** 🍞
+2. Clone your fork:
+   ```sh
+   git clone https://github.com/yourusername/apply-archive.git
+   ```
+3. Create a new branch:
+   ```sh
+   git checkout -b feature/your-feature
+   ```
+4. Commit changes:
+   ```sh
+   git add .
+   git commit -m "Added a new feature"
+   ```
+5. Push & create a **Pull Request**! 🚀
+
+---
+
 ## **📝 License**
 This project is licensed under the **MIT License** – free to use, modify, and share!  
 Check the [LICENSE](./LICENSE) file for details.
@@ -218,3 +256,4 @@ Check the [LICENSE](./LICENSE) file for details.
 - **If you like this project, give it a ⭐ on GitHub!**  
 - **Share with job seekers & friends** to help them manage their applications!  
 - **Follow for updates! 🚀**  
+
