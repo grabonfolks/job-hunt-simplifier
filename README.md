@@ -49,7 +49,18 @@ git clone https://github.com/yourusername/apply-archive.git
 cd apply-archive
 ```
 
-### **3️⃣ Configure Environment Variables**
+### **3️⃣ Install Dependencies**
+Install all required packages with a single command:
+```sh
+npm install react react-dom react-router-dom @tanstack/react-query zod react-hook-form @hookform/resolvers date-fns uuid cors dotenv express mongoose multer
+```
+
+Or if you prefer yarn:
+```sh
+yarn add react react-dom react-router-dom @tanstack/react-query zod react-hook-form @hookform/resolvers date-fns uuid cors dotenv express mongoose multer
+```
+
+### **4️⃣ Configure Environment Variables**
 Create a `.env` file in the root directory and copy the content from `.env.example`:
 ```sh
 # MongoDB Connection String 
