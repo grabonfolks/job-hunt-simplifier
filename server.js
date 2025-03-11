@@ -62,7 +62,7 @@ const jobSchema = new mongoose.Schema({
 
 const Job = mongoose.model('Job', jobSchema);
 
-// Connect to MongoDB with error handling
+// Connect to MongoDB with improved error handling
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB successfully'))
   .catch(err => {
@@ -184,8 +184,30 @@ app.get('/api/health', (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
+// Create HTTP server explicitly for better error handling
+import http from 'http';
+const server = http.createServer(app);
+
+// Handle socket errors properly
+server.on('clientError', (err, socket) => {
+  console.error('Client socket error:', err);
+  if (socket.writable && !socket.destroyed) {
+    socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+    socket.destroy();
+  }
+});
+
+// Add proper error handler for the server
+server.on('error', (error) => {
+  console.error('Server error:', error);
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Please use a different port.`);
+    process.exit(1);
+  }
+});
+
+// Start server with improved error handling
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`API URL: http://localhost:${PORT}/api`);
   console.log('Health check: http://localhost:' + PORT + '/api/health');
@@ -195,4 +217,10 @@ app.listen(PORT, () => {
 process.on('unhandledRejection', (error) => {
   console.error('Unhandled Promise Rejection:', error);
   // Don't crash the server, just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't crash the server on uncaught exceptions either
 });
