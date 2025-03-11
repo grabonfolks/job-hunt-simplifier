@@ -213,13 +213,20 @@ apply-archive/
 - Supported file types: PDF, DOC, DOCX, TXT
 
 ### Cross-Platform Notes
-- **Windows**: Ensure you have npm in your system PATH
+- **Windows**: 
+  - Ensure you have npm in your system PATH
+  - If you get "spawn npm ENOENT" error, try running `where npm` to verify npm is accessible
+  - Make sure Node.js is properly installed and in your PATH
+  - Try running commands in PowerShell or Command Prompt with administrator privileges
 - **macOS/Linux**: Standard commands work without modification
 - If you encounter EACCES errors on Linux/Mac, use `sudo chmod -R 755 uploads/`
 - For best results on Windows, run commands in a terminal with administrator privileges
 
 ### Common Errors
-- **spawn npm ENOENT**: Make sure npm is installed and in your system PATH
+- **spawn npm ENOENT**: 
+  - Make sure npm is installed and in your system PATH 
+  - On Windows, try using `npm.cmd` instead of `npm` in scripts
+  - Restart your terminal or command prompt after installing Node.js
 - **PORT already in use**: Change the PORT in your .env file
 - **MongoDB connection errors**: Verify that MongoDB is running and the connection string is correct
 

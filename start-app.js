@@ -29,20 +29,26 @@ console.log('\x1b[36m%s\x1b[0m', '🚀 Starting Apply Archive...');
 
 // Start backend server
 console.log('\x1b[36m%s\x1b[0m', '📡 Starting backend server...');
-const backend = spawn('node', ['--experimental-modules', 'server.js'], {
+const backend = spawn('node', ['server.js'], {
   stdio: 'inherit',
   env: process.env,
-  shell: true  // Add shell: true for Windows compatibility
+  shell: true,  // Use shell for Windows compatibility
+  cwd: __dirname  // Ensure we're in the right directory
 });
 
 // Wait a bit for the backend to initialize before starting frontend
 setTimeout(() => {
   // Start frontend dev server
   console.log('\x1b[36m%s\x1b[0m', '🖥️  Starting frontend server...');
-  const frontend = spawn('npm', ['run', 'dev'], {
+  
+  // Determine the correct npm executable based on platform
+  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  
+  const frontend = spawn(npmCmd, ['run', 'dev'], {
     stdio: 'inherit',
     env: process.env,
-    shell: true  // Add shell: true for Windows compatibility
+    shell: true,  // Use shell for Windows compatibility
+    cwd: __dirname  // Ensure we're in the right directory
   });
 
   // Log URLs
