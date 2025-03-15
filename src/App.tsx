@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 import Index from "./pages/Index";
 import AddApplication from "./pages/AddApplication";
 import ViewApplication from "./pages/ViewApplication";
@@ -78,21 +79,23 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index storageMode={storageMode} />} />
-            <Route path="/add-application" element={<AddApplication />} />
-            <Route path="/application/:id" element={<ViewApplication />} />
-            <Route path="/edit-application/:id" element={<EditApplication />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="light">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index storageMode={storageMode} />} />
+              <Route path="/add-application" element={<AddApplication />} />
+              <Route path="/application/:id" element={<ViewApplication />} />
+              <Route path="/edit-application/:id" element={<EditApplication />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 

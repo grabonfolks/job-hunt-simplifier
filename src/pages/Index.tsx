@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import ApplicationCard from '@/components/ApplicationCard';
 import SearchBar from '@/components/SearchBar';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Filter, Job } from '@/types/types';
 import { getJobs, getFilter, saveFilter, applyFilters, getMongoDBConfig } from '@/lib/storage';
 import { PlusCircle, Database, HardDrive, Search, AlertCircle } from 'lucide-react';
@@ -79,12 +80,15 @@ const Index: React.FC<IndexProps> = ({ storageMode = 'Loading...' }) => {
               </div>
             </div>
             
-            <Link to="/add-application">
-              <Button className="mt-4 sm:mt-0 flex items-center gap-2 transition-all duration-300 animate-slide-in-right">
-                <PlusCircle className="h-4 w-4" />
-                Add Application
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2 mt-4 sm:mt-0">
+              <ThemeToggle />
+              <Link to="/add-application">
+                <Button className="flex items-center gap-2 transition-all duration-300 animate-slide-in-right">
+                  <PlusCircle className="h-4 w-4" />
+                  Add Application
+                </Button>
+              </Link>
+            </div>
           </div>
           
           <SearchBar 
