@@ -2,7 +2,8 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { FileText, Upload, X, FilePlus, FileIcon, Download } from 'lucide-react';
+import { FileText, Upload, X, FilePlus, FileIcon, Download, FileCheck } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface FileUploadProps {
   onChange: (file: File | null) => void;
@@ -55,6 +56,7 @@ const FileUpload = ({
     }
 
     onChange(file);
+    toast.success(`${label} uploaded successfully`);
   };
 
   // Handle drag events
@@ -83,6 +85,7 @@ const FileUpload = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    toast.info(`${label} removed`);
   };
 
   // Get file name from data URL or path
@@ -127,6 +130,7 @@ const FileUpload = ({
         className={cn(
           'relative border-2 border-dashed rounded-lg p-6 transition-colors',
           isDragging ? 'border-primary/70 bg-primary/5' : 'border-muted-foreground/20 hover:border-muted-foreground/40',
+          value ? 'bg-primary/5 border-primary/30' : '',
           error && 'border-destructive/40 bg-destructive/5'
         )}
         onDragOver={handleDragOver}
@@ -160,13 +164,13 @@ const FileUpload = ({
           // File selected state
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="rounded-full bg-primary/10 p-2">
-                <FileIcon className="h-5 w-5 text-primary" />
+              <div className="rounded-full bg-primary/20 p-2">
+                <FileCheck className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">{getFileName()}</p>
                 <p className="text-xs text-muted-foreground">
-                  {label} uploaded
+                  <span className="text-primary font-medium">File uploaded</span> - {label}
                 </p>
               </div>
             </div>
