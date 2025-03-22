@@ -1,4 +1,3 @@
-
 # **Apply Archive - Job Application Tracker** 🎯
 
 A **free & open-source job application tracker** to organize your job search efficiently!  
@@ -17,6 +16,8 @@ Track applications, store resumes, search/filter jobs, and **never lose track of
 ✔️ **Intuitive UI** – Clean, minimal UI built with React & Tailwind CSS  
 ✔️ **Fully Responsive** – Works on desktops, tablets, and mobile devices  
 ✔️ **Robust Error Handling** – Graceful fallbacks and informative user feedback  
+✔️ **Comprehensive Logging** – Detailed error and event logging  
+✔️ **Dark Mode Support** – Toggle between light and dark themes  
 
 ---
 
@@ -80,6 +81,9 @@ VITE_API_URL=http://localhost:5001/api
 
 # Server port
 PORT=5001
+
+# Optional: Error log file path (logs all server errors)
+# ERROR_LOG_PATH=./logs/error.log
 ```
 
 ### **5️⃣ MongoDB Setup**
@@ -103,13 +107,62 @@ For persistent storage, you'll need MongoDB:
   3. Update and install: `sudo apt-get update && sudo apt-get install -y mongodb-org`
   4. Start MongoDB: `sudo systemctl start mongod`
 
-#### **MongoDB Atlas (Cloud):**
-1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register)
-2. Create a new project and cluster (free tier available)
-3. Set up database access (username and password)
-4. Set up network access (IP whitelist)
-5. Get your connection string from the "Connect" button
-6. Replace the MONGODB_URI in your .env file with the Atlas connection string
+#### **MongoDB Atlas (Cloud) Setup:**
+MongoDB Atlas is a fully managed cloud database service that's perfect if you don't want to install MongoDB locally:
+
+1. **Create a MongoDB Atlas Account:**
+   - Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register) and create a free account
+   - No credit card required for the free tier
+
+2. **Create a New Project & Cluster:**
+   - Log in to your MongoDB Atlas account
+   - Click "Create" to start a new project
+   - Name your project (e.g., "ApplyArchive")
+   - Click "Create Project"
+   - Click "Build a Database" and select "Free" (Shared) tier
+   - Choose your preferred cloud provider (AWS, Google Cloud, or Azure)
+   - Select a region closest to you for best performance
+   - Keep the default cluster name (Cluster0) or rename it
+   - Click "Create Cluster" (This process takes 1-3 minutes)
+
+3. **Set Up Database Security:**
+   - While the cluster is being created, you'll be prompted to create a database user
+   - Username: Create a username (remember this)
+   - Password: Create a secure password or use the "Autogenerate Secure Password" option (save this password!)
+   - Select "Built-in Role" as "Atlas admin"
+   - Click "Create User"
+
+4. **Configure Network Access:**
+   - Go to the "Network Access" tab
+   - Click "Add IP Address"
+   - For development, you can select "Allow Access from Anywhere" (0.0.0.0/0)
+   - For production, enter your application server's IP address
+   - Click "Confirm"
+
+5. **Get Your Connection String:**
+   - Go to "Database" in the left sidebar
+   - Click "Connect" on your cluster
+   - Select "Connect your application"
+   - Copy the connection string
+   - Replace `<password>` with your actual database user's password
+   - Replace `myFirstDatabase` with `applyarchive` or your preferred database name
+
+6. **Add Connection String to Your .env File:**
+   ```
+   MONGODB_URI=mongodb+srv://yourusername:yourpassword@cluster0.xxxxx.mongodb.net/applyarchive?retryWrites=true&w=majority
+   ```
+
+7. **Verify Connection:**
+   - Start your application
+   - Check the health endpoint: `http://localhost:5001/api/health`
+   - It should show "API server is running and connected to MongoDB"
+
+#### **MongoDB Atlas Free Tier Limitations:**
+- 512MB of storage (sufficient for thousands of job applications)
+- Shared RAM and vCPU
+- Data is automatically replicated for high availability
+- Automatic backups
+- Clusters on M0 free tier will pause after 60 days of inactivity
 
 #### **Verify MongoDB Connection:**
 After starting MongoDB, verify it's running:
@@ -117,7 +170,10 @@ After starting MongoDB, verify it's running:
 # For local MongoDB
 mongosh
 
-# Should show a connection to mongodb://127.0.0.1:27017
+# For MongoDB Atlas, use the connection string from the Atlas dashboard
+mongosh "mongodb+srv://yourusername:yourpassword@cluster0.xxxxx.mongodb.net/applyarchive"
+
+# Should connect and display MongoDB shell version
 ```
 
 ---
@@ -163,6 +219,23 @@ npm run dev
 
 ---
 
+## **📊 Logging**
+
+The application has comprehensive logging built in:
+
+### **Server-Side Logging**
+- API requests and responses are logged to the console
+- All MongoDB operations are logged
+- Errors are captured and logged in detail
+- Optional file logging can be enabled by setting ERROR_LOG_PATH in .env
+
+### **Client-Side Logging**
+- Critical errors are saved to localStorage for troubleshooting
+- Network errors, data validation issues, and API problems are tracked
+- Logs can be retrieved for debugging purposes
+
+---
+
 ## **💽 Project Structure**
 ```
 apply-archive/
@@ -172,6 +245,7 @@ apply-archive/
 ├── server.js             # Express backend
 ├── start-app.js          # Start script (Frontend + Backend)
 ├── uploads/              # Storage for uploaded files
+├── logs/                 # Error logs (if enabled)
 ├── src/                  # Frontend source
 │   ├── App.tsx           # Main component with routing
 │   ├── components/       # UI components
@@ -180,9 +254,11 @@ apply-archive/
 │   │   ├── SearchBar.tsx        # Search and filter
 │   │   ├── StatCard.tsx         # Statistics card
 │   │   ├── StatusBadge.tsx      # Application status badges
+│   │   ├── ThemeToggle.tsx      # Dark/light mode toggle
 │   │   └── ui/                  # UI components from shadcn
 │   ├── lib/              # Utilities
 │   │   ├── storage.ts    # Storage logic (localStorage & MongoDB)
+│   │   ├── logger.ts     # Logging utility
 │   │   └── utils.ts      # Utility functions
 │   ├── pages/            # App pages
 │   │   ├── AddApplication.tsx   # Add new application
@@ -202,9 +278,12 @@ apply-archive/
 ## **⚠️ Troubleshooting**
 
 ### MongoDB Connection Issues
-- Ensure MongoDB is running (run `mongod` in terminal)
-- Check your connection string in `.env`
-- Verify network connectivity to MongoDB Atlas (if using cloud)
+- Ensure MongoDB is running (run `mongod` in terminal for local MongoDB)
+- For MongoDB Atlas, check your IP whitelist settings
+- Verify your connection string in `.env`
+- Double-check your MongoDB Atlas username and password
+- Ensure your database user has the correct permissions
+- For Atlas connection issues, try using the "Connect" button in the Atlas dashboard and test with MongoDB Compass
 - The app will automatically fall back to localStorage if MongoDB is unavailable
 
 ### File Upload Problems
@@ -262,5 +341,4 @@ Check the [LICENSE](./LICENSE) file for details.
 ## **⭐ Support & Share**
 - **If you like this project, give it a ⭐ on GitHub!**  
 - **Share with job seekers & friends** to help them manage their applications!  
-- **Follow for updates! 🚀**  
-
+- **Follow for updates! 🚀**

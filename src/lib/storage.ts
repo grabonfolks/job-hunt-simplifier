@@ -1,5 +1,6 @@
 
 import { Job, MongoDBConfig, Filter } from "@/types/types";
+import logger from './logger';
 
 // Function to generate a unique ID
 const generateId = (): string => {
@@ -95,28 +96,47 @@ const getJobFromLocalStorage = (id: string): Job | null => {
 
 // Function to add a job to local storage
 const addJobToLocalStorage = (job: Job): void => {
-  const jobs = getJobsFromLocalStorage();
-  jobs.push(job);
-  localStorage.setItem('jobs', JSON.stringify(jobs));
+  try {
+    const jobs = getJobsFromLocalStorage();
+    jobs.push(job);
+    localStorage.setItem('jobs', JSON.stringify(jobs));
+    logger.info('Job added to localStorage', { id: job.id });
+  } catch (error) {
+    logger.error('Failed to add job to localStorage', error);
+    throw error;
+  }
 };
 
 // Function to update a job in local storage
 const updateJobInLocalStorage = (id: string, job: Job): void => {
-  const jobs = getJobsFromLocalStorage();
-  const updatedJobs = jobs.map((j) => (j.id === id ? job : j));
-  localStorage.setItem('jobs', JSON.stringify(updatedJobs));
+  try {
+    const jobs = getJobsFromLocalStorage();
+    const updatedJobs = jobs.map((j) => (j.id === id ? job : j));
+    localStorage.setItem('jobs', JSON.stringify(updatedJobs));
+    logger.info('Job updated in localStorage', { id });
+  } catch (error) {
+    logger.error('Failed to update job in localStorage', error);
+    throw error;
+  }
 };
 
 // Function to delete a job from local storage
 const deleteJobFromLocalStorage = (id: string): void => {
-  const jobs = getJobsFromLocalStorage();
-  const updatedJobs = jobs.filter((job) => job.id !== id);
-  localStorage.setItem('jobs', JSON.stringify(updatedJobs));
+  try {
+    const jobs = getJobsFromLocalStorage();
+    const updatedJobs = jobs.filter((job) => job.id !== id);
+    localStorage.setItem('jobs', JSON.stringify(updatedJobs));
+    logger.info('Job deleted from localStorage', { id });
+  } catch (error) {
+    logger.error('Failed to delete job from localStorage', error);
+    throw error;
+  }
 };
 
 // Add function to update MongoDB status for fallback handling
 export const setMongoDBStatus = (status: boolean): void => {
   localStorage.setItem('mongodb_connected', status ? 'true' : 'false');
+  logger.info('MongoDB connection status updated', { connected: status });
 };
 
 // Files storage utility
@@ -126,10 +146,17 @@ export const storeFile = async (file: File): Promise<string> => {
     
     reader.onload = (e) => {
       if (e.target && typeof e.target.result === 'string') {
+        logger.debug('File read successful', { filename: file.name, size: file.size });
         resolve(e.target.result);
       } else {
+        logger.error('File read failed', { filename: file.name });
         resolve('');
       }
+    };
+    
+    reader.onerror = (error) => {
+      logger.error('Error reading file', { filename: file.name, error });
+      resolve('');
     };
     
     reader.readAsDataURL(file);
@@ -147,6 +174,7 @@ export const getJobs = async (): Promise<Job[]> => {
   
   if (mongoConfig.enabled) {
     try {
+      logger.debug('Fetching jobs from MongoDB');
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
@@ -154,6 +182,7 @@ export const getJobs = async (): Promise<Job[]> => {
         signal: controller.signal
       }).catch(error => {
         if (error.name === 'AbortError') {
+          logger.error('MongoDB connection timeout');
           throw new Error('Connection timeout');
         }
         throw error;
@@ -163,17 +192,22 @@ export const getJobs = async (): Promise<Job[]> => {
       
       if (response.ok) {
         const jobs = await response.json();
+        logger.info('Successfully fetched jobs from MongoDB', { count: jobs.length });
+        setMongoDBStatus(true);
         return jobs;
       } else {
+        logger.error('Server error when fetching jobs', { status: response.status });
         throw new Error(`Server error: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error getting jobs from MongoDB:', error);
+      logger.error('Error getting jobs from MongoDB:', error);
       // Fallback to localStorage
       setMongoDBStatus(false);
+      logger.warn('Falling back to localStorage for jobs');
       return getJobsFromLocalStorage();
     }
   } else {
+    logger.debug('MongoDB not enabled, using localStorage for jobs');
     return getJobsFromLocalStorage();
   }
 };
@@ -184,6 +218,7 @@ export const getJob = async (id: string): Promise<Job | null> => {
   
   if (mongoConfig.enabled) {
     try {
+      logger.debug('Fetching job from MongoDB', { id });
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
@@ -191,6 +226,7 @@ export const getJob = async (id: string): Promise<Job | null> => {
         signal: controller.signal
       }).catch(error => {
         if (error.name === 'AbortError') {
+          logger.error('MongoDB connection timeout when fetching job', { id });
           throw new Error('Connection timeout');
         }
         throw error;
@@ -200,19 +236,24 @@ export const getJob = async (id: string): Promise<Job | null> => {
       
       if (response.ok) {
         const job = await response.json();
+        logger.debug('Successfully fetched job from MongoDB', { id });
         return job;
       } else if (response.status === 404) {
+        logger.warn('Job not found in MongoDB', { id });
         return null;
       } else {
+        logger.error('Server error when fetching job', { id, status: response.status });
         throw new Error(`Server error: ${response.status}`);
       }
     } catch (error) {
-      console.error('Error getting job from MongoDB:', error);
+      logger.error('Error getting job from MongoDB:', { id, error });
       // Fallback to localStorage
       setMongoDBStatus(false);
+      logger.warn('Falling back to localStorage for job', { id });
       return getJobFromLocalStorage(id);
     }
   } else {
+    logger.debug('MongoDB not enabled, using localStorage for job', { id });
     return getJobFromLocalStorage(id);
   }
 };
@@ -230,6 +271,7 @@ export const addJob = async (jobData: Omit<Job, "id" | "lastUpdated">): Promise<
   
   if (mongoConfig.enabled) {
     try {
+      logger.debug('Adding job to MongoDB', { id: job.id });
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
@@ -242,6 +284,7 @@ export const addJob = async (jobData: Omit<Job, "id" | "lastUpdated">): Promise<
         signal: controller.signal
       }).catch(error => {
         if (error.name === 'AbortError') {
+          logger.error('MongoDB connection timeout when adding job', { id: job.id });
           throw new Error('Connection timeout');
         }
         throw error;
@@ -250,15 +293,20 @@ export const addJob = async (jobData: Omit<Job, "id" | "lastUpdated">): Promise<
       clearTimeout(timeoutId);
       
       if (!response.ok) {
+        logger.error('Server error when adding job', { id: job.id, status: response.status });
         throw new Error(`Server error: ${response.status}`);
       }
+      
+      logger.info('Successfully added job to MongoDB', { id: job.id });
     } catch (error) {
-      console.error('Error adding job to MongoDB:', error);
+      logger.error('Error adding job to MongoDB:', { id: job.id, error });
       // Fallback to localStorage
       setMongoDBStatus(false);
+      logger.warn('Falling back to localStorage for adding job', { id: job.id });
       addJobToLocalStorage(job);
     }
   } else {
+    logger.debug('MongoDB not enabled, using localStorage for adding job', { id: job.id });
     addJobToLocalStorage(job);
   }
 };
@@ -347,6 +395,8 @@ export const deleteJob = async (id: string): Promise<void> => {
 export const generateNewJob = (): Job => {
   const newId = generateId();
   const now = new Date().toISOString();
+  
+  logger.debug('Generated new job template', { id: newId });
   
   return {
     id: newId,
