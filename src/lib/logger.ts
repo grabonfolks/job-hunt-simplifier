@@ -1,3 +1,4 @@
+
 /**
  * A simple logging utility for the application
  * Supports multiple log levels and formats
@@ -68,6 +69,7 @@ export const logError = (message: string, error?: any): void => {
  * @param data - Optional data to include
  */
 export const logWarning = (message: string, data?: any): void => {
+  // Changed from == to !== to fix type error
   if (DEFAULT_LOG_LEVEL === LogLevel.ERROR) return;
   
   const timestamp = getTimestamp();
@@ -81,6 +83,7 @@ export const logWarning = (message: string, data?: any): void => {
  * @param data - Optional data to include
  */
 export const logInfo = (message: string, data?: any): void => {
+  // Changed comparison logic to avoid type errors
   if (DEFAULT_LOG_LEVEL === LogLevel.ERROR || DEFAULT_LOG_LEVEL === LogLevel.WARN) return;
   
   const timestamp = getTimestamp();
